@@ -14,5 +14,8 @@
             "email": "contact@roukmoute.fr"
         }
     ],
-    "minimum-stability": "stable"
+    "minimum-stability": "stable",
+    "autoload": {
+        "psr-4": { "Roukmoute\\DoctrinePrefixBundle\\": "src/" }
+    }
 }

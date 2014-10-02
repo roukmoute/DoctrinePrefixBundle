@@ -17,7 +17,7 @@ class PrefixSubscriber implements \Doctrine\Common\EventSubscriber
      */
     public function __construct($prefix, $bundles, $encoding)
     {
-        $this->prefix   = mb_convert_case($prefix, MB_CASE_TITLE, $encoding);
+        $this->prefix   = mb_convert_encoding($prefix, $encoding);
         $this->bundles  = $bundles;
         $this->encoding = $encoding;
     }

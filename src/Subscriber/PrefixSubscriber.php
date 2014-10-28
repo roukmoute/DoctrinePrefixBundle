@@ -63,7 +63,8 @@ class PrefixSubscriber implements \Doctrine\Common\EventSubscriber
 
             // Generate Sequence
             $em = $args->getEntityManager();
-            if ($em->getConnection()->getDatabasePlatform() instanceof \Doctrine\DBAL\Platforms\PostgreSqlPlatform
+            $platform = $em->getConnection()->getDatabasePlatform();
+            if ($platform instanceof \Doctrine\DBAL\Platforms\PostgreSqlPlatform
                 && $classMetadata->isIdGeneratorSequence()
             ) {
                 $newDefinition                 = $classMetadata->sequenceGeneratorDefinition;
@@ -75,7 +76,7 @@ class PrefixSubscriber implements \Doctrine\Common\EventSubscriber
                         $em->getConfiguration()->getQuoteStrategy()->getSequenceName(
                             $newDefinition,
                             $classMetadata,
-                            $em->getConnection()->getDatabasePlatform()),
+                            $platform),
                         $newDefinition['allocationSize']
                     );
                     $classMetadata->setIdGenerator($sequenceGenerator);

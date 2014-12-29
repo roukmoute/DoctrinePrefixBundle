@@ -17,5 +17,10 @@
     "minimum-stability": "stable",
     "autoload": {
         "psr-4": { "Roukmoute\\DoctrinePrefixBundle\\": "src/" }
+    },
+    "extra": {
+        "branch-alias": {
+            "dev-master": "1.0-dev"
+        }
     }
 }

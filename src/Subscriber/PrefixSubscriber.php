@@ -26,6 +26,14 @@ class PrefixSubscriber implements \Doctrine\Common\EventSubscriber
     }
 
     /**
+     * @return string
+     */
+    public function getPrefix()
+    {
+        return $this->prefix;
+    }
+
+    /**
      * @return array
      */
     public function getSubscribedEvents()

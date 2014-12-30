@@ -54,9 +54,10 @@ class PrefixSubscriber implements \Doctrine\Common\EventSubscriber
             return;
         }
 
+        $entity = strtr($classMetadata->namespace, array('\\' => '\\\\'));
         $filter
             = (bool)(empty($this->bundles)
-                     || new \RegexIterator(new \ArrayIterator($this->bundles), '/' . $classMetadata->namespace . '/i'));
+                     || new \RegexIterator(new \ArrayIterator($this->bundles), '/' . $entity . '/i'));
         if ($filter) {
             // Generate Table
             $classMetadata->setPrimaryTable(array('name' => $this->prefix . $classMetadata->getTableName()));

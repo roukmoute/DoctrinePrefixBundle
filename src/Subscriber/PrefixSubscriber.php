@@ -97,7 +97,7 @@ class PrefixSubscriber implements \Doctrine\Common\EventSubscriber
                     $sequenceName = null;
                     $fieldName    = $classMetadata->identifier ? $classMetadata->getSingleIdentifierFieldName() : null;
                     $columnName     = $classMetadata->getSingleIdentifierColumnName();
-                    $quoted         = isset($classMetadata->fieldMappings[$fieldName]['quoted']) || isset($class->table['quoted']);
+                    $quoted         = isset($classMetadata->fieldMappings[$fieldName]['quoted']) || isset($classMetadata->table['quoted']);
                     $sequenceName   = $classMetadata->getTableName() . '_' . $columnName . '_seq';
                     $definition     = array(
                         'sequenceName' => $platform->fixSchemaElementName($sequenceName)

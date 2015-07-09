@@ -55,9 +55,8 @@ class PrefixSubscriber implements \Doctrine\Common\EventSubscriber
         }
 
         $entity = strtr($classMetadata->namespace, array('\\' => '\\\\'));
-        $filter
-            = (bool)(empty($this->bundles)
-                     || new \RegexIterator(new \ArrayIterator($this->bundles), '/' . $entity . '/i'));
+        $filter = (bool)(empty($this->bundles)
+                         || new \RegexIterator(new \ArrayIterator($this->bundles), '/' . $entity . '/i'));
         if ($filter) {
             // Generate Table
             $classMetadata->setPrimaryTable(array('name' => $this->prefix . $classMetadata->getTableName()));
@@ -96,12 +95,11 @@ class PrefixSubscriber implements \Doctrine\Common\EventSubscriber
                 } elseif ($classMetadata->isIdGeneratorIdentity()) {
                     $sequenceName = null;
                     $fieldName    = $classMetadata->identifier ? $classMetadata->getSingleIdentifierFieldName() : null;
-                    $columnName     = $classMetadata->getSingleIdentifierColumnName();
-                    $quoted         = isset($classMetadata->fieldMappings[$fieldName]['quoted']) || isset($classMetadata->table['quoted']);
-                    $sequenceName   = $classMetadata->getTableName() . '_' . $columnName . '_seq';
-                    $definition     = array(
-                        'sequenceName' => $platform->fixSchemaElementName($sequenceName)
-                    );
+                    $columnName   = $classMetadata->getSingleIdentifierColumnName();
+                    $quoted       = isset($classMetadata->fieldMappings[$fieldName]['quoted'])
+                                    || isset($classMetadata->table['quoted']);
+                    $sequenceName = $classMetadata->getTableName() . '_' . $columnName . '_seq';
+                    $definition   = array('sequenceName' => $platform->fixSchemaElementName($sequenceName));
 
                     if ($quoted) {
                         $definition['quoted'] = true;

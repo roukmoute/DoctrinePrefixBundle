@@ -49,17 +49,12 @@ class PrefixSubscriber implements \Doctrine\Common\EventSubscriber
         /** @var \Doctrine\ORM\Mapping\ClassMetadata $classMetadata */
         $classMetadata = $args->getClassMetadata();
 
-        // Do not re-apply the prefix in an inheritance hierarchy.
-        if ($classMetadata->isInheritanceTypeSingleTable() && !$classMetadata->isRootEntity()) {
-            return;
-        }
-
         $entity = strtr($classMetadata->namespace, array('\\' => '\\\\'));
         $filter = (bool)(empty($this->bundles)
                          || new \RegexIterator(new \ArrayIterator($this->bundles), '/' . $entity . '/i'));
         if ($filter) {
             // Generate Table
-            $classMetadata->setPrimaryTable(array('name' => $this->prefix . $classMetadata->getTableName()));
+            $classMetadata->setPrimaryTable(array('name' => $this->addPrefix($classMetadata->getTableName())));
 
             foreach ($classMetadata->getAssociationMappings() as $fieldName => $mapping) {
                 if ($mapping['type'] == \Doctrine\ORM\Mapping\ClassMetadataInfo::MANY_TO_MANY
@@ -68,7 +63,7 @@ class PrefixSubscriber implements \Doctrine\Common\EventSubscriber
                     $mappedTableName
                         = $classMetadata->associationMappings[$fieldName]['joinTable']['name'];
                     $classMetadata->associationMappings[$fieldName]['joinTable']['name']
-                        = $this->prefix . $mappedTableName;
+                        = $this->addPrefix($mappedTableName);
                 }
             }
 
@@ -78,7 +73,7 @@ class PrefixSubscriber implements \Doctrine\Common\EventSubscriber
             if ($platform instanceof \Doctrine\DBAL\Platforms\PostgreSqlPlatform) {
                 if ($classMetadata->isIdGeneratorSequence()) {
                     $newDefinition                 = $classMetadata->sequenceGeneratorDefinition;
-                    $newDefinition['sequenceName'] = $this->prefix . $newDefinition['sequenceName'];
+                    $newDefinition['sequenceName'] = $this->addPrefix($newDefinition['sequenceName']);
 
                     $classMetadata->setSequenceGeneratorDefinition($newDefinition);
                     if (isset($classMetadata->idGenerator)) {
@@ -118,5 +113,14 @@ class PrefixSubscriber implements \Doctrine\Common\EventSubscriber
                 }
             }
         }
+    }
+
+    private function addPrefix($name)
+    {
+        if (strpos($name, $this->prefix) === 0) {
+            return $name;
+        }
+
+        return $this->prefix . $name;
     }
 }

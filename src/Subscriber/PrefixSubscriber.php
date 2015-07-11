@@ -56,6 +56,14 @@ class PrefixSubscriber implements \Doctrine\Common\EventSubscriber
             // Generate Table
             $classMetadata->setPrimaryTable(array('name' => $this->addPrefix($classMetadata->getTableName())));
 
+            // Generate indexes
+            if (isset($classMetadata->table['indexes'])) {
+                foreach ($classMetadata->table['indexes'] as $index => $value) {
+                    unset($classMetadata->table['indexes'][$index]);
+                    $classMetadata->table['indexes'][$this->addPrefix($index)] = $value;
+                }
+            }
+
             foreach ($classMetadata->getAssociationMappings() as $fieldName => $mapping) {
                 if ($mapping['type'] == \Doctrine\ORM\Mapping\ClassMetadataInfo::MANY_TO_MANY
                     && isset($classMetadata->associationMappings[$fieldName]['joinTable']['name'])

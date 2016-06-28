@@ -5,7 +5,6 @@ namespace Roukmoute\DoctrinePrefixBundle\Subscriber;
 use Doctrine\ORM\Event\LoadClassMetadataEventArgs;
 use Doctrine\ORM\Id\IdentityGenerator;
 use Doctrine\ORM\Id\BigIntegerIdentityGenerator;
-use Doctrine\ORM\Id\AssignedGenerator;
 
 class PrefixSubscriber implements \Doctrine\Common\EventSubscriber
 {

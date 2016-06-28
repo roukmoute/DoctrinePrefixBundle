@@ -1,3 +1,5 @@
+[![SensioLabsInsight](https://insight.sensiolabs.com/projects/d832c1a7-7f3a-41f4-9b90-7090cba996cd/mini.png)](https://insight.sensiolabs.com/projects/d832c1a7-7f3a-41f4-9b90-7090cba996cd)
+
 # DoctrinePrefixBundle
 
 This bundle prefixes tables and, if you are using PostgreSQL, sequences with a

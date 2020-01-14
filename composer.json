@@ -2,10 +2,11 @@
     "name": "roukmoute/doctrine-prefix-bundle",
     "description": "Listener that prefixes tables and sequences",
     "require": {
-        "doctrine/orm": "~2.4",
-        "symfony/dependency-injection": "~2.3",
-        "symfony/config": "~2.3",
-        "symfony/http-kernel": "~2.3"
+        "doctrine/event-manager": "^1.1",
+        "symfony/config": "3.4.*|4.4.*",
+        "symfony/http-kernel": "3.4.*|4.4.*",
+        "symfony/dependency-injection": "3.4.*|4.4.*",
+        "doctrine/orm": "^2.7"
     },
     "license": "MIT",
     "authors": [

@@ -17,7 +17,7 @@ class Configuration implements ConfigurationInterface
         $rootNode
             ->children()
                 ->scalarNode('prefix')
-                    ->defaultValue('sf')
+                    ->defaultValue('')
                     ->info('will be prepended to table and sequence names')
                 ->end()
                 ->arrayNode('bundles')

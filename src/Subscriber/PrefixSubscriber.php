@@ -62,7 +62,7 @@ class PrefixSubscriber implements EventSubscriber
 
     private function addPrefix($name)
     {
-        if (mb_strpos($name, $this->prefix) === 0) {
+        if (empty($this->prefix) || mb_strpos($name, $this->prefix) === 0) {
             return $name;
         }
 

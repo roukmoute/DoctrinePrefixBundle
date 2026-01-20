@@ -42,6 +42,7 @@ class TablePrefixListener
 
         $this->prefixTable($classMetadata);
         $this->prefixIndexes($classMetadata);
+        $this->prefixUniqueConstraints($classMetadata);
         $this->prefixManyToManyJoinTables($classMetadata);
         $this->prefixSequence($args, $classMetadata);
     }
@@ -97,6 +98,22 @@ class TablePrefixListener
             $prefixedIndexes[$this->addPrefix((string) $indexName)] = $indexConfig;
         }
         $classMetadata->table['indexes'] = $prefixedIndexes;
+    }
+
+    /**
+     * @param ClassMetadata<object> $classMetadata
+     */
+    private function prefixUniqueConstraints(ClassMetadata $classMetadata): void
+    {
+        if (!isset($classMetadata->table['uniqueConstraints'])) {
+            return;
+        }
+
+        $prefixedConstraints = [];
+        foreach ($classMetadata->table['uniqueConstraints'] as $constraintName => $constraintConfig) {
+            $prefixedConstraints[$this->addPrefix((string) $constraintName)] = $constraintConfig;
+        }
+        $classMetadata->table['uniqueConstraints'] = $prefixedConstraints;
     }
 
     /**

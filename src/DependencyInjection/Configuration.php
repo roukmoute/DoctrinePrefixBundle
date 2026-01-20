@@ -11,8 +11,8 @@ class Configuration implements ConfigurationInterface
 {
     public function getConfigTreeBuilder()
     {
-        $treeBuilder = new TreeBuilder();
-        $rootNode = $treeBuilder->root('roukmoute_doctrine_prefix');
+        $treeBuilder = new TreeBuilder('roukmoute_doctrine_prefix');
+        $rootNode = $treeBuilder->getRootNode();
 
         $rootNode
             ->children()

@@ -11,7 +11,7 @@ use Symfony\Component\HttpKernel\DependencyInjection\Extension;
 
 class RoukmouteDoctrinePrefixExtension extends Extension
 {
-    public function load(array $configs, ContainerBuilder $container)
+    public function load(array $configs, ContainerBuilder $container): void
     {
         $configuration = new Configuration();
         $config = $this->processConfiguration($configuration, $configs);
@@ -19,8 +19,15 @@ class RoukmouteDoctrinePrefixExtension extends Extension
         $loader = new Loader\XmlFileLoader($container, new FileLocator(__DIR__ . '/../../Resources/config'));
         $loader->load('services.xml');
 
-        $container->setParameter('roukmoute_doctrineprefixbundle.prefix', $config['prefix']);
-        $container->setParameter('roukmoute_doctrineprefixbundle.bundles', $config['bundles']);
-        $container->setParameter('roukmoute_doctrineprefixbundle.encoding', $config['encoding']);
+        /** @var string $prefix */
+        $prefix = $config['prefix'];
+        /** @var list<string> $bundles */
+        $bundles = $config['bundles'];
+        /** @var string $encoding */
+        $encoding = $config['encoding'];
+
+        $container->setParameter('roukmoute_doctrineprefixbundle.prefix', $prefix);
+        $container->setParameter('roukmoute_doctrineprefixbundle.bundles', $bundles);
+        $container->setParameter('roukmoute_doctrineprefixbundle.encoding', $encoding);
     }
 }

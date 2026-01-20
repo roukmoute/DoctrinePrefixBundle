@@ -87,15 +87,10 @@ class TablePrefixListenerTest extends TestCase
 
         $classMetadata = $this->createClassMetadata('user');
 
-        /** @var class-string $sourceEntity */
-        $sourceEntity = 'App\\Entity\\User';
-        /** @var class-string $targetEntity */
-        $targetEntity = 'App\\Entity\\Role';
-
         $mapping = new ManyToManyOwningSideMapping(
             fieldName: 'roles',
-            sourceEntity: $sourceEntity,
-            targetEntity: $targetEntity,
+            sourceEntity: \stdClass::class,
+            targetEntity: \stdClass::class,
         );
         $mapping->joinTable = new JoinTableMapping('user_role');
         $classMetadata->associationMappings['roles'] = $mapping;

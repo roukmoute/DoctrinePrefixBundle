@@ -14,6 +14,9 @@ class TablePrefixListener
     /** @var list<string> */
     protected array $bundles = [];
 
+    /**
+     * @param list<string> $bundles
+     */
     public function __construct(
         protected string $prefix,
         array $bundles,
@@ -104,22 +107,12 @@ class TablePrefixListener
      */
     private function prefixManyToManyJoinTables(ClassMetadata $classMetadata): void
     {
-        foreach ($classMetadata->associationMappings as $fieldName => $mapping) {
+        foreach ($classMetadata->associationMappings as $mapping) {
             if (!$mapping instanceof ManyToManyOwningSideMapping) {
                 continue;
             }
 
-            $joinTable = $mapping->joinTable;
-            if ($joinTable === null) {
-                continue;
-            }
-
-            $joinTableName = $joinTable->name;
-            if ($joinTableName === null) {
-                continue;
-            }
-
-            $joinTable->name = $this->addPrefix($joinTableName);
+            $mapping->joinTable->name = $this->addPrefix($mapping->joinTable->name);
         }
     }
 
@@ -133,10 +126,6 @@ class TablePrefixListener
         }
 
         $sequenceDefinition = $classMetadata->sequenceGeneratorDefinition;
-        if ($sequenceDefinition === null) {
-            return;
-        }
-
         $sequenceDefinition['sequenceName'] = $this->addPrefix($sequenceDefinition['sequenceName']);
         $classMetadata->setSequenceGeneratorDefinition($sequenceDefinition);
 

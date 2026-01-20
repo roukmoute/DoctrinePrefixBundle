@@ -87,13 +87,17 @@ class TablePrefixListenerTest extends TestCase
 
         $classMetadata = $this->createClassMetadata('user');
 
-        $joinTable = new JoinTableMapping('user_role');
+        /** @var class-string $sourceEntity */
+        $sourceEntity = 'App\\Entity\\User';
+        /** @var class-string $targetEntity */
+        $targetEntity = 'App\\Entity\\Role';
+
         $mapping = new ManyToManyOwningSideMapping(
             fieldName: 'roles',
-            sourceEntity: 'App\\Entity\\User',
-            targetEntity: 'App\\Entity\\Role',
-            joinTable: $joinTable,
+            sourceEntity: $sourceEntity,
+            targetEntity: $targetEntity,
         );
+        $mapping->joinTable = new JoinTableMapping('user_role');
         $classMetadata->associationMappings['roles'] = $mapping;
 
         $eventArgs = $this->createEventArgs($classMetadata);
@@ -127,9 +131,6 @@ class TablePrefixListenerTest extends TestCase
         self::assertSame('user', $classMetadata->getTableName());
     }
 
-    /**
-     * @return array<string, array{string, string, string}>
-     */
     #[DataProvider('unicodePrefixProvider')]
     public function testUnicodePrefixIsHandledCorrectly(string $prefix, string $tableName, string $expected): void
     {

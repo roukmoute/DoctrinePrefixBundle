@@ -1,5 +1,15 @@
-# directory
-vendor
+# Dependencies
+/vendor/
 
-# file
+# Composer
 composer.lock
+
+# PHPUnit
+.phpunit.cache/
+phpunit.xml
+
+# PHPStan
+.phpstan.cache/
+
+# PHP-CS-Fixer
+.php-cs-fixer.cache

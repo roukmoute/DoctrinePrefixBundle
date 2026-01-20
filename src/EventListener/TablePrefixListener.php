@@ -23,7 +23,7 @@ class TablePrefixListener
         string $encoding,
     ) {
         $this->prefix = mb_convert_encoding($prefix, $encoding);
-        $this->bundles = array_values($bundles);
+        $this->bundles = $bundles;
     }
 
     public function getPrefix(): string
@@ -31,9 +31,6 @@ class TablePrefixListener
         return $this->prefix;
     }
 
-    /**
-     * @param LoadClassMetadataEventArgs $args
-     */
     public function loadClassMetadata(LoadClassMetadataEventArgs $args): void
     {
         /** @var ClassMetadata<object> $classMetadata */

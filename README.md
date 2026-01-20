@@ -1,50 +1,98 @@
-[![SensioLabsInsight](https://insight.sensiolabs.com/projects/d832c1a7-7f3a-41f4-9b90-7090cba996cd/mini.png)](https://insight.sensiolabs.com/projects/d832c1a7-7f3a-41f4-9b90-7090cba996cd)
-
 # DoctrinePrefixBundle
 
-This bundle prefixes tables and, if you are using PostgreSQL, sequences with a
-string of your choice by changing the metadata of your entities. Prefixes are
-good if you need to share a database with tables from another project, or if
-you want to name your entities using reserved keywords like `user` or `group`.
+[![CI](https://github.com/roukmoute/DoctrinePrefixBundle/actions/workflows/ci.yml/badge.svg)](https://github.com/roukmoute/DoctrinePrefixBundle/actions/workflows/ci.yml)
+
+A Symfony bundle that automatically prefixes Doctrine ORM table names, indexes, unique constraints, and PostgreSQL sequences.
+
+Prefixes are useful when you need to:
+- Share a database with tables from another project
+- Use reserved SQL keywords as entity names (like `user` or `group`)
+- Organize tables by application or module
+
+## Requirements
+
+- PHP ^8.1
+- Symfony ^6.4 || ^7.0
+- Doctrine ORM ^3.0
 
 ## Installation
 
-    composer require roukmoute/doctrine-prefix-bundle
+```bash
+composer require roukmoute/doctrine-prefix-bundle
+```
+
+With Symfony Flex, the bundle is automatically registered.
 
 ## Configuration
 
-First, you need to register the bundle in your application kernel, like this :
-
-```php
-<?php
-//app/AppKernel.php
-use Symfony\Component\HttpKernel\Kernel;
-use Symfony\Component\Config\Loader\LoaderInterface;
-
-class AppKernel extends Kernel
-{
-    public function registerBundles()
-    {
-        $bundles = array(
-            new Symfony\Bundle\FrameworkBundle\FrameworkBundle(),
-            new Symfony\Bundle\SecurityBundle\SecurityBundle(),
-            …
-            new Roukmoute\DoctrinePrefixBundle\RoukmouteDoctrinePrefixBundle()
-        );
-        …
+```yaml
+# config/packages/roukmoute_doctrine_prefix.yaml
+roukmoute_doctrine_prefix:
+    prefix: 'app_'
 ```
 
-The configuration looks as follows :
+### Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `prefix` | string | `''` | The prefix to prepend to names |
+| `bundles` | array | `[]` | If set, only entities from these namespaces will be prefixed |
+| `encoding` | string | `'UTF-8'` | The encoding for the prefix |
+
+### Example with bundle filtering
 
 ```yaml
 roukmoute_doctrine_prefix:
-
-    # will be prepended to table and sequence names
-    prefix:               sf
-
-    # if set, the prefix will be applied to specified bundles only
-    bundles:              []
-
-    # the encoding to convert the prefix to
-    encoding:             UTF-8
+    prefix: 'app_'
+    bundles:
+        - 'App\Entity'
+        - 'Acme\BlogBundle\Entity'
 ```
+
+## What gets prefixed?
+
+| Element | Example (prefix: `app_`) |
+|---------|--------------------------|
+| Table names | `user` → `app_user` |
+| Index names | `idx_email` → `app_idx_email` |
+| Unique constraint names | `uniq_email` → `app_uniq_email` |
+| Many-to-many join tables | `user_role` → `app_user_role` |
+| PostgreSQL sequences | `user_id_seq` → `app_user_id_seq` |
+
+## Example
+
+```php
+use Doctrine\ORM\Mapping as ORM;
+
+#[ORM\Entity]
+#[ORM\Table(
+    indexes: [new ORM\Index(name: 'idx_email', columns: ['email'])],
+    uniqueConstraints: [new ORM\UniqueConstraint(name: 'uniq_username', columns: ['username'])]
+)]
+class User
+{
+    #[ORM\Id]
+    #[ORM\GeneratedValue]
+    #[ORM\Column]
+    private ?int $id = null;
+
+    #[ORM\Column(length: 180)]
+    private ?string $email = null;
+
+    #[ORM\Column(length: 50)]
+    private ?string $username = null;
+
+    #[ORM\ManyToMany(targetEntity: Role::class)]
+    private Collection $roles;
+}
+```
+
+With `prefix: 'app_'`, this will generate:
+- Table: `app_user`
+- Index: `app_idx_email`
+- Unique constraint: `app_uniq_username`
+- Join table: `app_user_role`
+
+## License
+
+MIT

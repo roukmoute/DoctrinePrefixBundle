@@ -15,6 +15,8 @@ return (new PhpCsFixer\Config())
         'ordered_imports' => ['sort_algorithm' => 'alpha'],
         'phpdoc_order' => true,
         'strict_param' => true,
+        'yoda_style' => false,
+        'concat_space' => ['spacing' => 'one'],
     ])
     ->setRiskyAllowed(true)
     ->setFinder($finder)

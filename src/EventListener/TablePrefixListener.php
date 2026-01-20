@@ -5,23 +5,22 @@ declare(strict_types=1);
 namespace Roukmoute\DoctrinePrefixBundle\EventListener;
 
 use Doctrine\ORM\Event\LoadClassMetadataEventArgs;
-use Doctrine\ORM\Id\BigIntegerIdentityGenerator;
-use Doctrine\ORM\Id\IdentityGenerator;
+use Doctrine\ORM\Id\SequenceGenerator;
 use Doctrine\ORM\Mapping\ClassMetadata;
+use Doctrine\ORM\Mapping\ManyToManyOwningSideMapping;
 
 class TablePrefixListener
 {
-    protected string $prefix = '';
-
+    /** @var list<string> */
     protected array $bundles = [];
 
-    protected string $encoding = '';
-
-    public function __construct(string $prefix, array $bundles, string $encoding)
-    {
+    public function __construct(
+        protected string $prefix,
+        array $bundles,
+        string $encoding,
+    ) {
         $this->prefix = mb_convert_encoding($prefix, $encoding);
-        $this->bundles = $bundles;
-        $this->encoding = $encoding;
+        $this->bundles = array_values($bundles);
     }
 
     public function getPrefix(): string
@@ -29,113 +28,128 @@ class TablePrefixListener
         return $this->prefix;
     }
 
+    /**
+     * @param LoadClassMetadataEventArgs $args
+     */
     public function loadClassMetadata(LoadClassMetadataEventArgs $args): void
     {
-        /** @var ClassMetadata $classMetadata */
+        /** @var ClassMetadata<object> $classMetadata */
         $classMetadata = $args->getClassMetadata();
 
         if (!$this->isFiltered($classMetadata)) {
             return;
         }
 
-        $this->generateTable($classMetadata);
-        $this->generateIndexes($classMetadata);
-        $this->generateSequence($args, $classMetadata);
+        $this->prefixTable($classMetadata);
+        $this->prefixIndexes($classMetadata);
+        $this->prefixManyToManyJoinTables($classMetadata);
+        $this->prefixSequence($args, $classMetadata);
     }
 
     private function addPrefix(string $name): string
     {
-        if (empty($this->prefix) || mb_strpos($name, $this->prefix) === 0) {
+        if ($this->prefix === '' || str_starts_with($name, $this->prefix)) {
             return $name;
         }
 
         return $this->prefix . $name;
     }
 
+    /**
+     * @param ClassMetadata<object> $classMetadata
+     */
     private function isFiltered(ClassMetadata $classMetadata): bool
     {
-        return (bool) (empty($this->bundles)
-            || iterator_to_array(
-                new \RegexIterator(
-                    new \ArrayIterator($this->bundles),
-                    sprintf('/%s/i', strtr($classMetadata->namespace, ['\\' => '\\\\']))
-                )
-            )
-        );
+        if (empty($this->bundles)) {
+            return true;
+        }
+
+        $namespace = $classMetadata->namespace ?? '';
+
+        foreach ($this->bundles as $bundle) {
+            if (str_contains($namespace, $bundle)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
-    private function generateTable(ClassMetadata $classMetadata): void
+    /**
+     * @param ClassMetadata<object> $classMetadata
+     */
+    private function prefixTable(ClassMetadata $classMetadata): void
     {
         $classMetadata->setPrimaryTable(['name' => $this->addPrefix($classMetadata->getTableName())]);
     }
 
-    private function generateIndexes(ClassMetadata $classMetadata): void
+    /**
+     * @param ClassMetadata<object> $classMetadata
+     */
+    private function prefixIndexes(ClassMetadata $classMetadata): void
     {
-        if (isset($classMetadata->table['indexes'])) {
-            foreach ($classMetadata->table['indexes'] as $index => $value) {
-                unset($classMetadata->table['indexes'][$index]);
-                $classMetadata->table['indexes'][$this->addPrefix($index)] = $value;
-            }
+        if (!isset($classMetadata->table['indexes'])) {
+            return;
         }
 
-        foreach ($classMetadata->getAssociationMappings() as $fieldName => $mapping) {
-            if ($mapping['type'] == ClassMetadata::MANY_TO_MANY
-                && isset($classMetadata->associationMappings[$fieldName]['joinTable']['name'])
-            ) {
-                $mappedTableName
-                    = $classMetadata->associationMappings[$fieldName]['joinTable']['name'];
-                $classMetadata->associationMappings[$fieldName]['joinTable']['name']
-                    = $this->addPrefix($mappedTableName);
+        $prefixedIndexes = [];
+        foreach ($classMetadata->table['indexes'] as $indexName => $indexConfig) {
+            $prefixedIndexes[$this->addPrefix((string) $indexName)] = $indexConfig;
+        }
+        $classMetadata->table['indexes'] = $prefixedIndexes;
+    }
+
+    /**
+     * @param ClassMetadata<object> $classMetadata
+     */
+    private function prefixManyToManyJoinTables(ClassMetadata $classMetadata): void
+    {
+        foreach ($classMetadata->associationMappings as $fieldName => $mapping) {
+            if (!$mapping instanceof ManyToManyOwningSideMapping) {
+                continue;
             }
+
+            $joinTable = $mapping->joinTable;
+            if ($joinTable === null) {
+                continue;
+            }
+
+            $joinTableName = $joinTable->name;
+            if ($joinTableName === null) {
+                continue;
+            }
+
+            $joinTable->name = $this->addPrefix($joinTableName);
         }
     }
 
-    private function generateSequence(LoadClassMetadataEventArgs $args, ClassMetadata $classMetadata): void
+    /**
+     * @param ClassMetadata<object> $classMetadata
+     */
+    private function prefixSequence(LoadClassMetadataEventArgs $args, ClassMetadata $classMetadata): void
     {
+        if (!$classMetadata->isIdGeneratorSequence()) {
+            return;
+        }
+
+        $sequenceDefinition = $classMetadata->sequenceGeneratorDefinition;
+        if ($sequenceDefinition === null) {
+            return;
+        }
+
+        $sequenceDefinition['sequenceName'] = $this->addPrefix($sequenceDefinition['sequenceName']);
+        $classMetadata->setSequenceGeneratorDefinition($sequenceDefinition);
+
         $em = $args->getEntityManager();
         $platform = $em->getConnection()->getDatabasePlatform();
-        if ($platform instanceof \Doctrine\DBAL\Platforms\PostgreSQLPlatform) {
-            if ($classMetadata->isIdGeneratorSequence()) {
-                $newDefinition = $classMetadata->sequenceGeneratorDefinition;
-                $newDefinition['sequenceName'] = $this->addPrefix($newDefinition['sequenceName']);
 
-                $classMetadata->setSequenceGeneratorDefinition($newDefinition);
-                if (isset($classMetadata->idGenerator)) {
-                    $sequenceGenerator = new \Doctrine\ORM\Id\SequenceGenerator(
-                        $em->getConfiguration()->getQuoteStrategy()->getSequenceName(
-                            $newDefinition,
-                            $classMetadata,
-                            $platform
-                        ),
-                        $newDefinition['allocationSize']
-                    );
-                    $classMetadata->setIdGenerator($sequenceGenerator);
-                }
-            } elseif ($classMetadata->isIdGeneratorIdentity()) {
-                $sequenceName = null;
-                $fieldName = $classMetadata->identifier ? $classMetadata->getSingleIdentifierFieldName() : null;
-                $columnName = $classMetadata->getSingleIdentifierColumnName();
-                $quoted = isset($classMetadata->fieldMappings[$fieldName]['quoted'])
-                    || isset($classMetadata->table['quoted']);
-                $sequenceName = $classMetadata->getTableName() . '_' . $columnName . '_seq';
-                $definition = ['sequenceName' => $platform->fixSchemaElementName($sequenceName)];
+        $sequenceName = $em->getConfiguration()
+            ->getQuoteStrategy()
+            ->getSequenceName($sequenceDefinition, $classMetadata, $platform);
 
-                if ($quoted) {
-                    $definition['quoted'] = true;
-                }
-
-                $sequenceName = $em->getConfiguration()->getQuoteStrategy()->getSequenceName(
-                    $definition,
-                    $classMetadata,
-                    $platform
-                )
-                ;
-                $generator = ($fieldName && $classMetadata->fieldMappings[$fieldName]['type'] === 'bigint')
-                    ? new BigIntegerIdentityGenerator($sequenceName)
-                    : new IdentityGenerator($sequenceName);
-
-                $classMetadata->setIdGenerator($generator);
-            }
-        }
+        $classMetadata->setIdGenerator(new SequenceGenerator(
+            $sequenceName,
+            (int) $sequenceDefinition['allocationSize'],
+        ));
     }
 }

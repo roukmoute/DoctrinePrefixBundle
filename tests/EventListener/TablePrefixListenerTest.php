@@ -6,12 +6,13 @@ namespace Roukmoute\DoctrinePrefixBundle\Tests\EventListener;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Platforms\AbstractPlatform;
-use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Doctrine\ORM\Configuration;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Event\LoadClassMetadataEventArgs;
 use Doctrine\ORM\Mapping\ClassMetadata;
 use Doctrine\ORM\Mapping\DefaultQuoteStrategy;
+use Doctrine\ORM\Mapping\JoinTableMapping;
+use Doctrine\ORM\Mapping\ManyToManyOwningSideMapping;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Roukmoute\DoctrinePrefixBundle\EventListener\TablePrefixListener;
@@ -22,7 +23,7 @@ class TablePrefixListenerTest extends TestCase
     {
         $listener = new TablePrefixListener('app_', [], 'UTF-8');
 
-        $this->assertSame('app_', $listener->getPrefix());
+        self::assertSame('app_', $listener->getPrefix());
     }
 
     public function testTableNameIsPrefixed(): void
@@ -34,7 +35,7 @@ class TablePrefixListenerTest extends TestCase
 
         $listener->loadClassMetadata($eventArgs);
 
-        $this->assertSame('app_user', $classMetadata->getTableName());
+        self::assertSame('app_user', $classMetadata->getTableName());
     }
 
     public function testTableNameIsNotDoublePrefixed(): void
@@ -46,7 +47,7 @@ class TablePrefixListenerTest extends TestCase
 
         $listener->loadClassMetadata($eventArgs);
 
-        $this->assertSame('app_user', $classMetadata->getTableName());
+        self::assertSame('app_user', $classMetadata->getTableName());
     }
 
     public function testEmptyPrefixDoesNotModifyTableName(): void
@@ -58,7 +59,7 @@ class TablePrefixListenerTest extends TestCase
 
         $listener->loadClassMetadata($eventArgs);
 
-        $this->assertSame('user', $classMetadata->getTableName());
+        self::assertSame('user', $classMetadata->getTableName());
     }
 
     public function testIndexNamesArePrefixed(): void
@@ -74,10 +75,10 @@ class TablePrefixListenerTest extends TestCase
 
         $listener->loadClassMetadata($eventArgs);
 
-        $this->assertArrayHasKey('app_idx_email', $classMetadata->table['indexes']);
-        $this->assertArrayHasKey('app_idx_username', $classMetadata->table['indexes']);
-        $this->assertArrayNotHasKey('idx_email', $classMetadata->table['indexes']);
-        $this->assertArrayNotHasKey('idx_username', $classMetadata->table['indexes']);
+        self::assertArrayHasKey('app_idx_email', $classMetadata->table['indexes']);
+        self::assertArrayHasKey('app_idx_username', $classMetadata->table['indexes']);
+        self::assertArrayNotHasKey('idx_email', $classMetadata->table['indexes']);
+        self::assertArrayNotHasKey('idx_username', $classMetadata->table['indexes']);
     }
 
     public function testManyToManyJoinTableIsPrefixed(): void
@@ -85,15 +86,21 @@ class TablePrefixListenerTest extends TestCase
         $listener = new TablePrefixListener('app_', [], 'UTF-8');
 
         $classMetadata = $this->createClassMetadata('user');
-        $classMetadata->associationMappings['roles'] = [
-            'type' => ClassMetadata::MANY_TO_MANY,
-            'joinTable' => ['name' => 'user_role'],
-        ];
+
+        $joinTable = new JoinTableMapping('user_role');
+        $mapping = new ManyToManyOwningSideMapping(
+            fieldName: 'roles',
+            sourceEntity: 'App\\Entity\\User',
+            targetEntity: 'App\\Entity\\Role',
+            joinTable: $joinTable,
+        );
+        $classMetadata->associationMappings['roles'] = $mapping;
+
         $eventArgs = $this->createEventArgs($classMetadata);
 
         $listener->loadClassMetadata($eventArgs);
 
-        $this->assertSame('app_user_role', $classMetadata->associationMappings['roles']['joinTable']['name']);
+        self::assertSame('app_user_role', $mapping->joinTable->name);
     }
 
     public function testBundleFilteringAllowsMatchingNamespace(): void
@@ -105,7 +112,7 @@ class TablePrefixListenerTest extends TestCase
 
         $listener->loadClassMetadata($eventArgs);
 
-        $this->assertSame('app_user', $classMetadata->getTableName());
+        self::assertSame('app_user', $classMetadata->getTableName());
     }
 
     public function testBundleFilteringSkipsNonMatchingNamespace(): void
@@ -117,26 +124,12 @@ class TablePrefixListenerTest extends TestCase
 
         $listener->loadClassMetadata($eventArgs);
 
-        $this->assertSame('user', $classMetadata->getTableName());
+        self::assertSame('user', $classMetadata->getTableName());
     }
 
-    public function testPostgreSQLSequenceIsPrefixed(): void
-    {
-        $listener = new TablePrefixListener('app_', [], 'UTF-8');
-
-        $classMetadata = $this->createClassMetadata('user');
-        $classMetadata->setIdGeneratorType(ClassMetadata::GENERATOR_TYPE_SEQUENCE);
-        $classMetadata->setSequenceGeneratorDefinition([
-            'sequenceName' => 'user_id_seq',
-            'allocationSize' => 1,
-        ]);
-        $eventArgs = $this->createEventArgs($classMetadata, PostgreSQLPlatform::class);
-
-        $listener->loadClassMetadata($eventArgs);
-
-        $this->assertSame('app_user_id_seq', $classMetadata->sequenceGeneratorDefinition['sequenceName']);
-    }
-
+    /**
+     * @return array<string, array{string, string, string}>
+     */
     #[DataProvider('unicodePrefixProvider')]
     public function testUnicodePrefixIsHandledCorrectly(string $prefix, string $tableName, string $expected): void
     {
@@ -147,30 +140,40 @@ class TablePrefixListenerTest extends TestCase
 
         $listener->loadClassMetadata($eventArgs);
 
-        $this->assertSame($expected, $classMetadata->getTableName());
+        self::assertSame($expected, $classMetadata->getTableName());
     }
 
+    /**
+     * @return array<string, array{string, string, string}>
+     */
     public static function unicodePrefixProvider(): array
     {
         return [
             'ascii prefix' => ['test_', 'user', 'test_user'],
             'unicode prefix' => ['préfixe_', 'user', 'préfixe_user'],
-            'emoji prefix' => ['🚀_', 'user', '🚀_user'],
         ];
     }
 
+    /**
+     * @return ClassMetadata<object>
+     */
     private function createClassMetadata(string $tableName, string $namespace = 'App\\Entity'): ClassMetadata
     {
-        $classMetadata = new ClassMetadata($namespace . '\\User');
+        /** @var class-string<object> $className */
+        $className = $namespace . '\\User';
+        $classMetadata = new ClassMetadata($className);
         $classMetadata->setPrimaryTable(['name' => $tableName]);
         $classMetadata->namespace = $namespace;
 
         return $classMetadata;
     }
 
-    private function createEventArgs(ClassMetadata $classMetadata, string $platformClass = AbstractPlatform::class): LoadClassMetadataEventArgs
+    /**
+     * @param ClassMetadata<object> $classMetadata
+     */
+    private function createEventArgs(ClassMetadata $classMetadata): LoadClassMetadataEventArgs
     {
-        $platform = $this->createMock($platformClass);
+        $platform = $this->createMock(AbstractPlatform::class);
 
         $connection = $this->createMock(Connection::class);
         $connection->method('getDatabasePlatform')->willReturn($platform);

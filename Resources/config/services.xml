@@ -4,21 +4,13 @@
            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
            xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd">
 
-    <parameters>
-        <parameter key="roukmoutedoctrineprefixbundle.subscriber.class">Roukmoute\DoctrinePrefixBundle\Subscriber\PrefixSubscriber</parameter>
-        <parameter key="roukmoutedoctrineprefixbundle.prefix">%roukmoute_doctrineprefixbundle.prefix%</parameter>
-        <parameter key="roukmoutedoctrineprefixbundle.bundles">%roukmoute_doctrineprefixbundle.bundles%</parameter>
-        <parameter key="roukmoutedoctrineprefixbundle.encoding">%roukmoute_doctrineprefixbundle.encoding%</parameter>
-    </parameters>
-
     <services>
-        <service id="roukmoutedoctrineprefixbundle.prefix_subscriber"
-                 class="%roukmoutedoctrineprefixbundle.subscriber.class%"
-                >
-            <argument>%roukmoutedoctrineprefixbundle.prefix%</argument>
-            <argument>%roukmoutedoctrineprefixbundle.bundles%</argument>
-            <argument>%roukmoutedoctrineprefixbundle.encoding%</argument>
-            <tag name="doctrine.event_subscriber" />
+        <service id="roukmoute.doctrine_prefix.table_prefix_listener"
+                 class="Roukmoute\DoctrinePrefixBundle\EventListener\TablePrefixListener">
+            <argument>%roukmoute_doctrineprefixbundle.prefix%</argument>
+            <argument>%roukmoute_doctrineprefixbundle.bundles%</argument>
+            <argument>%roukmoute_doctrineprefixbundle.encoding%</argument>
+            <tag name="doctrine.event_listener" event="loadClassMetadata"/>
         </service>
     </services>
 </container>

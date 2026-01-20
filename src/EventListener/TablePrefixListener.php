@@ -2,51 +2,34 @@
 
 declare(strict_types=1);
 
-namespace Roukmoute\DoctrinePrefixBundle\Subscriber;
+namespace Roukmoute\DoctrinePrefixBundle\EventListener;
 
-use Doctrine\Common\EventSubscriber;
 use Doctrine\ORM\Event\LoadClassMetadataEventArgs;
 use Doctrine\ORM\Id\BigIntegerIdentityGenerator;
 use Doctrine\ORM\Id\IdentityGenerator;
 use Doctrine\ORM\Mapping\ClassMetadata;
 
-class PrefixSubscriber implements EventSubscriber
+class TablePrefixListener
 {
-    protected $prefix = '';
+    protected string $prefix = '';
 
-    protected $bundles = [];
+    protected array $bundles = [];
 
-    protected $encoding = '';
+    protected string $encoding = '';
 
-    /**
-     * @param $prefix
-     * @param $bundles
-     * @param $encoding
-     */
-    public function __construct($prefix, $bundles, $encoding)
+    public function __construct(string $prefix, array $bundles, string $encoding)
     {
         $this->prefix = mb_convert_encoding($prefix, $encoding);
         $this->bundles = $bundles;
         $this->encoding = $encoding;
     }
 
-    /**
-     * @return string
-     */
-    public function getPrefix()
+    public function getPrefix(): string
     {
         return $this->prefix;
     }
 
-    /**
-     * @return array
-     */
-    public function getSubscribedEvents()
-    {
-        return ['loadClassMetadata'];
-    }
-
-    public function loadClassMetadata(LoadClassMetadataEventArgs $args)
+    public function loadClassMetadata(LoadClassMetadataEventArgs $args): void
     {
         /** @var ClassMetadata $classMetadata */
         $classMetadata = $args->getClassMetadata();
@@ -60,7 +43,7 @@ class PrefixSubscriber implements EventSubscriber
         $this->generateSequence($args, $classMetadata);
     }
 
-    private function addPrefix($name)
+    private function addPrefix(string $name): string
     {
         if (empty($this->prefix) || mb_strpos($name, $this->prefix) === 0) {
             return $name;

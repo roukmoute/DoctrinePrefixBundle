@@ -79,7 +79,7 @@ class TablePrefixListener
         }
 
         foreach ($classMetadata->getAssociationMappings() as $fieldName => $mapping) {
-            if ($mapping['type'] == \Doctrine\ORM\Mapping\ClassMetadataInfo::MANY_TO_MANY
+            if ($mapping['type'] == ClassMetadata::MANY_TO_MANY
                 && isset($classMetadata->associationMappings[$fieldName]['joinTable']['name'])
             ) {
                 $mappedTableName
@@ -94,7 +94,7 @@ class TablePrefixListener
     {
         $em = $args->getEntityManager();
         $platform = $em->getConnection()->getDatabasePlatform();
-        if ($platform instanceof \Doctrine\DBAL\Platforms\PostgreSqlPlatform) {
+        if ($platform instanceof \Doctrine\DBAL\Platforms\PostgreSQLPlatform) {
             if ($classMetadata->isIdGeneratorSequence()) {
                 $newDefinition = $classMetadata->sequenceGeneratorDefinition;
                 $newDefinition['sequenceName'] = $this->addPrefix($newDefinition['sequenceName']);

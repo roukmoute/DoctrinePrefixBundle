@@ -81,6 +81,25 @@ class TablePrefixListenerTest extends TestCase
         self::assertArrayNotHasKey('idx_username', $classMetadata->table['indexes']);
     }
 
+    public function testUniqueConstraintNamesArePrefixed(): void
+    {
+        $listener = new TablePrefixListener('app_', [], 'UTF-8');
+
+        $classMetadata = $this->createClassMetadata('user');
+        $classMetadata->table['uniqueConstraints'] = [
+            'uniq_email' => ['columns' => ['email']],
+            'uniq_username' => ['columns' => ['username']],
+        ];
+        $eventArgs = $this->createEventArgs($classMetadata);
+
+        $listener->loadClassMetadata($eventArgs);
+
+        self::assertArrayHasKey('app_uniq_email', $classMetadata->table['uniqueConstraints']);
+        self::assertArrayHasKey('app_uniq_username', $classMetadata->table['uniqueConstraints']);
+        self::assertArrayNotHasKey('uniq_email', $classMetadata->table['uniqueConstraints']);
+        self::assertArrayNotHasKey('uniq_username', $classMetadata->table['uniqueConstraints']);
+    }
+
     public function testManyToManyJoinTableIsPrefixed(): void
     {
         $listener = new TablePrefixListener('app_', [], 'UTF-8');
